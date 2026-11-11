@@ -18,7 +18,7 @@
 
 /* ════════════════ ۱) هسته ════════════════ */
 
-var VERSION='1.2.1';
+var VERSION=(typeof window.__GV==='string'&&window.__GV)?window.__GV:'1.2.1';
 var SAVE_KEY='gravity_last_survivor_save';
 var SNAP_KEY='gravity_last_survivor_snapshot';
 var TAU=Math.PI*2;
@@ -26,7 +26,7 @@ var WORLD_R=1150;              // شعاع میدان گرانشی (محدوده
 
 /* وضعیت سراسری */
 var cvs=null,ctx=null,W=0,H=0,DPR=1;
-var state='boot';              // boot|menu|playing|paused|levelup|dead|over
+var state='boot';              // boot|menu|playing|paused|levelup|dead|over|ending
 var profile=null;              // پیشرفت دائمی
 var run=null;                  // وضعیت دور جاری
 var player=null,boss=null;
@@ -140,6 +140,7 @@ function defaultProfile(){
     spec:{},
     set:{music:true,sfx:true,vib:true,quality:1,lang:'fa'},
     tutorial:false,
+    sawIntro:false,
     snapshot:null
   };
 }
@@ -175,6 +176,7 @@ function validateProfile(p){
     d.fx.eq=(typeof p.fx.eq==='string')?p.fx.eq:'plasma';
   }
   var t=sanObj(p.tree);for(var tk in t)d.tree[tk]=sanNum(t[tk],0,5,0);
+  d.sawIntro=!!p.sawIntro;
   var m=sanObj(p.missions);
   d.missions.day=sanNum(m.day,-1,1e9,-1);
   if(Array.isArray(m.daily))d.missions.daily=m.daily.filter(function(x){return typeof x==='string';});
@@ -430,6 +432,19 @@ var STORY={
     'قطعه‌ای از خاطره بازیابی شد.',
     'قدرت گذشته‌ات بازمی‌گردد.',
     'هسته‌ی تاریکی، ترسید.'
+  ],
+  mid:[
+    'یک دقیقه گذشت. شکاف هنوز گرسنه است...',
+    'ناوگانِ خاطره‌ها از راه می‌رسد؛ سه دقیقه دوام آوردی.',
+    'هفت دقیقه... زمین زیر پایت، صدای تو را می‌شنود.',
+    'دوازده دقیقه دوام آوردی. هسته‌ی تاریکی چشمانش را به تو دوخته است.',
+    'دیگر تمرین نیست. این آخرین راهِ خانه است.'
+  ],
+  ending:[
+    'پنجمین نگهبان فروپاشید.',
+    'از دل غبار، صدایی آمد — صدای زمین.',
+    '"بازگشتی. حالا تو هستی که گرانش را نگه می‌داری."',
+    'فصل اول کامل شد — اما شکاف، بسته نشده است...'
   ]
 };
 
@@ -1228,7 +1243,7 @@ function drawPlayer(){
     if(player.hurtT>0.08)_st='hit';
     player.anim.play(_st);
     var _lean=clamp(player.vx*0.0011,-0.1,0.1);
-    player.anim.draw(ctx,player.x,player.y+7+_bobP,74,{
+    player.anim.draw(ctx,player.x,player.y+7+_bobP,80,{
       flip:(Math.cos(player.aimAng||0)<0),
       rot:_lean,
       alpha:blink?0.4:1
@@ -1562,7 +1577,7 @@ function killEnemy(e,src){
   e.dead=true;
   var st=player.st;
   run.kills++;
-  run.score+=CFG.scoreKill*(e.elite?3:1);
+  run.score+=CFG.scoreKill*(e.elite?3:1)*(run.scoreMul||1);
   /* انیمیشن مرگ فریمی واقعی به‌جای محو شدن فوری */
   if(ANIMS.ready&&ETYPES[e.type]&&ETYPES[e.type].an){
     addCorpse(ETYPES[e.type].an,e.x,e.y,e.r*(e.elite?4.9:4.1),(player.x<e.x));
@@ -1816,8 +1831,9 @@ function spawnBoss(idx){
   var def=BOSSES[idx%BOSSES.length];
   var scale=(1+idx*0.8)*(1+run.t/900);
   var ang=rand(0,TAU);
-  var sx=player.x+Math.cos(ang)*Math.max(W,H)*0.62;
-  var sy=player.y+Math.sin(ang)*Math.max(W,H)*0.62;
+  var sd=clamp(Math.max(W,H)*0.55,360,540);
+  var sx=player.x+Math.cos(ang)*sd;
+  var sy=player.y+Math.sin(ang)*sd;
   var dc=Math.sqrt(sx*sx+sy*sy);
   if(dc>WORLD_R-120){sx=sx/dc*(WORLD_R-120);sy=sy/dc*(WORLD_R-120);}
   boss={
@@ -1856,10 +1872,10 @@ function updateBoss(dt){
   if(boss.anim)boss.anim.update(dt);
   var d=dist(boss.x,boss.y,player.x,player.y);
   var toP=angTo(boss.x,boss.y,player.x,player.y);
-  /* ورود باس */
+  /* ورود باس — با سرعت دوبرابر برای آمدن سریع و دراماتیک */
   if(boss.entry>0){
     boss.entry-=dt;
-    moveTowardB(player.x,player.y,dt,0.7);
+    moveTowardB(player.x,player.y,dt,1.75);
     boss.x+=boss.vx*dt;boss.y+=boss.vy*dt;
     return;
   }
@@ -2100,7 +2116,7 @@ function bossDie(){
   dropHeart(boss.x+rand(-30,30),boss.y+rand(-30,30));
   run.shardsGot+=Math.max(1,Math.round((2+idx)*st.bossMul));
   run.bossKills++;
-  run.score+=CFG.scoreBoss;
+  run.score+=CFG.scoreBoss*(run.scoreMul||1);
   if(run.reviveUsed===0)run.bossCleanCount++;
   if(boss.id==='titan')run.bossTitanKilled=true;
   if(boss.id==='memory')run.bossMemoryKilled=true;
@@ -2110,6 +2126,47 @@ function bossDie(){
   if(ANIMS.ready&&boss.def.an)addCorpse(boss.def.an,boss.x,boss.y,boss.r*4.4,(player.x<boss.x));
   boss=null;
   flashScreen('#ffffff',0.22);
+  /* پایان فصل: کشتن باس پنجم */
+  if(idx%5===4&&!run.ended){
+    run.ended=true;
+    setTimeout(showEnding,900);
+  }
+}
+/* ─── پایان فصل اول: سکانس پایانی ─── */
+function showEnding(){
+  if(state!=='playing')return;
+  state='ending';
+  slowMo(0.4,1.4);
+  flashScreen('#ffe9b0',0.3);
+  AudioSys.sfx('bossdie');
+  var box=$('end-lines');
+  box.innerHTML='';
+  for(var i=0;i<STORY.ending.length;i++){
+    var d=document.createElement('div');
+    d.className='ic-line'+(i===2?' key':'');
+    d.textContent=STORY.ending[i];
+    box.appendChild(d);
+    (function(el,k){setTimeout(function(){el.classList.add('show');},420+k*1050);})(d,i);
+  }
+  UI.showScreen('scr-ending');
+  UI.setHud(false);
+}
+function closeEnding(){
+  UI.showScreen(null);
+  UI.setHud(true);
+  state='playing';
+  storyMsg('نبرد بی‌پایان آغاز شد — امتیاز ×۱.۵ از این لحظه');
+  run.scoreMul=1.5;
+}
+/* ─── هشدار ورود باس: پوشش قرمز لبه‌ها ─── */
+var bossAlertRef=null;
+function setBossAlert(on){
+  if(!bossAlertRef){
+    bossAlertRef=document.createElement('div');
+    bossAlertRef.className='boss-alert';
+    document.body.appendChild(bossAlertRef);
+  }
+  bossAlertRef.classList.toggle('on',!!on);
 }
 /* ─── نمایش کمبو زنجیره‌ی کشتن کنار بازیکن ─── */
 function drawCombo(){
@@ -2565,7 +2622,7 @@ function gainXP(v){
   while(run.xp>=run.xpNext){
     run.xp-=run.xpNext;
     run.level++;
-    run.score+=CFG.scoreLevel;
+    run.score+=CFG.scoreLevel*(run.scoreMul||1);
     run.xpNext=xpNeed(run.level);
     openLevelUp();
   }
@@ -2989,7 +3046,7 @@ function storyMaybe(key){
 
 /* ════════════════ ۷) رابط کاربری — همه صفحه‌ها و HUD ════════════════ */
 
-var SCREENS=['scr-menu','scr-shop','scr-tree','scr-missions','scr-ach','scr-settings','scr-pause','scr-level','scr-over','scr-ad','scr-confirm','scr-tut'];
+var SCREENS=['scr-menu','scr-shop','scr-tree','scr-missions','scr-ach','scr-settings','scr-pause','scr-level','scr-over','scr-ad','scr-confirm','scr-tut','scr-ending'];
 var UI={
   shopTab:'skins',
   selectedNode:null,
@@ -3028,6 +3085,8 @@ var UI={
     $('m-best').textContent=faGroup(profile.best.score);
     $('shop-coins').textContent=faGroup(profile.coins);
     $('tree-shards').textContent=faGroup(profile.shards);
+    var mv=$('menu-ver');
+    if(mv)mv.innerHTML='v'+VERSION+' — آفلاین'+(window.__PATCHED?' <span class="upd">بروزرسانی‌شده</span>':'');
   },
   /* ── HUD هر فریم ── */
   updateHUDFrame:function(){
@@ -3663,6 +3722,16 @@ function update(dt){
   updateCorpses(dt);
   updateEnvAmbient(dt);
   run.t+=dt;
+  /* ضرب‌آهنگ‌های داستانی میانه‌ی دور */
+  if(!run.midTold)run.midTold={};
+  var MID=[60,180,420,720,1080];
+  for(var _mi=0;_mi<MID.length;_mi++){
+    if(run.t>=MID[_mi]&&!run.midTold[MID[_mi]]){
+      run.midTold[MID[_mi]]=true;
+      storyMsg(STORY.mid[_mi]);
+      break;
+    }
+  }
   frameLoopCommon(dt);
   updatePlayer(dt);
   updateEnemies(dt);
@@ -3991,6 +4060,10 @@ function loop(ts){
     frameLoopCommon(dt*0.3);
     updateCorpses(dt);
     if(deadT>1.25)finishDeath();
+  }else if(state==='ending'){
+    frameLoopCommon(dt*0.25);
+    updateCorpses(dt);
+    if(bossAlertRef)bossAlertRef.classList.remove('on');
   }else if(state==='menu'||state==='boot'){
     cam.x=Math.sin(ts*0.00004)*340;
     cam.y=Math.cos(ts*0.00005)*260;
@@ -4001,12 +4074,14 @@ function loop(ts){
     updateFX(dt);
   }
   render(ts);
-  if(state==='playing'||state==='dead'||state==='paused'||state==='levelup')UI.updateHUDFrame();
+  if(state==='playing')setBossAlert(boss&&boss.entry>0);
+  else if(bossAlertRef)bossAlertRef.classList.remove('on');
+  if(state==='playing'||state==='dead'||state==='paused'||state==='levelup'||state==='ending')UI.updateHUDFrame();
   if(state==='menu'||state==='boot')drawMenuHero();
 }
 function render(t){
   drawBackground(t);
-  if(state==='playing'||state==='dead'||state==='levelup'||state==='paused'||state==='over'){
+  if(state==='playing'||state==='dead'||state==='levelup'||state==='paused'||state==='over'||state==='ending'){
     renderWorld(t);
     drawVignette();
   }
@@ -4021,6 +4096,7 @@ function bindUI(){
     });
   };
   click('btn-start',function(){startRun();});
+  click('btn-end-continue',function(){closeEnding();});
   click('btn-shop',function(){UI.buildShop('skins');UI.showScreen('scr-shop');});
   click('btn-tree',function(){UI.selectedNode=null;UI.buildTree();$('tree-panel').classList.add('hidden');UI.showScreen('scr-tree');});
   click('btn-missions',function(){UI.buildMissions();UI.showScreen('scr-missions');});
@@ -4607,6 +4683,76 @@ function drawMenuHero(){
   }
 }
 
+/* ─── سینمای آغاز: یک‌بار پس از نصب، پیش‌از‌منو ─── */
+function playIntro(){
+  if(!profile||profile.sawIntro)return;
+  var box=$('ic-lines'),wrap=$('intro-cine');
+  if(!box||!wrap)return;
+  box.innerHTML='';
+  wrap.classList.remove('hidden');
+  var done=false;
+  var finish=function(){
+    if(done)return;
+    done=true;
+    wrap.classList.add('hidden');
+    profile.sawIntro=true;
+    saveGame();
+  };
+  for(var i=0;i<STORY.intro.length;i++){
+    var d=document.createElement('div');
+    d.className='ic-line'+(i===STORY.intro.length-1?' key':'');
+    d.textContent=STORY.intro[i];
+    box.appendChild(d);
+    (function(el,k){setTimeout(function(){if(!done)el.classList.add('show');},700+k*1500);})(d,i);
+  }
+  wrap.addEventListener('click',finish);
+  setTimeout(finish,700+STORY.intro.length*1500+2800);
+}
+
+/* ─── بروزرسانی خودکار از مخزن گیت‌هاب (وقتی آنلاین باشد) ─── */
+var updChecked=false;
+function cmpVer(a,b){
+  var pa=String(a).split('.'),pb=String(b).split('.');
+  for(var i=0;i<3;i++){
+    var x=parseInt(pa[i]||'0',10)||0,y=parseInt(pb[i]||'0',10)||0;
+    if(x!==y)return x-y;
+  }
+  return 0;
+}
+function autoUpdate(){
+  if(updChecked)return;
+  updChecked=true;
+  try{
+    if(!navigator.onLine)return;
+    var bases=['https://raw.githubusercontent.com/Imzayan/gravity-last-survivor/main/',
+               'https://cdn.jsdelivr.net/gh/Imzayan/gravity-last-survivor@main/'];
+    var bi=0;
+    var get=function(path,cb){
+      if(bi>=bases.length){cb(null);return;}
+      fetch(bases[bi]+path,{cache:'no-store'}).then(function(r){
+        if(!r.ok)throw new Error('http '+r.status);
+        return r.text();
+      }).then(cb).catch(function(){bi++;get(path,cb);});
+    };
+    get('version.json',function(txt){
+      if(!txt)return;
+      var j=null;
+      try{j=JSON.parse(txt);}catch(e){}
+      if(!j||!j.v)return;
+      var cur=(typeof window.__GV==='string'&&window.__GV)||VERSION;
+      if(cmpVer(j.v,cur)>0){
+        get('game.js',function(code){
+          if(!code||code.length<50000)return;
+          try{localStorage.setItem('gv_up',JSON.stringify({v:j.v,code:code}));}catch(e){return;}
+          UI.toast('بروزرسانی '+j.v+' دریافت شد — بازی را یک‌بار ببند و باز کن',4500);
+          var mv=$('menu-ver');
+          if(mv)mv.innerHTML='v'+j.v+' — <span class="upd">بروزرسانی شد، بازگشایی کن</span>';
+        });
+      }
+    });
+  }catch(e){}
+}
+
 /* ─── راه‌اندازی ─── */
 function init(){
   setupCanvas();
@@ -4623,6 +4769,9 @@ function init(){
   UI.showScreen('scr-menu');
   state='menu';
   requestAnimationFrame(loop);
+  /* سینمای آغاز + بروزرسانی خودکار */
+  setTimeout(function(){try{playIntro();}catch(e){}},700);
+  setTimeout(function(){try{autoUpdate();}catch(e){}},2600);
   /* پیشنهاد ادامه‌ی دور قبلی */
   if(profile.snapshot&&profile.snapshot.t>15){
     UI.confirmBox('ادامه‌ی دور قبلی؟',
@@ -4655,6 +4804,8 @@ function init(){
     st:function(s){state=s;},
     addXP:function(v){if(state==='playing')gainXP(v||run.xpNext);},
     boss:function(){if(state==='playing'&&!boss)spawnBoss(dir.bossIdx);},
+    bossN:function(n){if(state==='playing'&&!boss){n=((n%5)+5)%5;dir.bossIdx=n;spawnBoss(n);dir.bossIdx=n+1;}},
+    killboss:function(){if(state==='playing'&&boss)damageBoss(1e9,false);},
     event:function(id){if(state==='playing')startEvent(id);},
     killAll:function(){for(var i=0;i<enemies.length;i++)if(!enemies[i].dead)killEnemy(enemies[i],'debug');},
     die:function(){if(state==='playing')playerDie();},

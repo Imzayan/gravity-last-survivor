@@ -198,6 +198,22 @@
     </div>
   </div>
 
+  <!-- ═══════════ سینمای آغاز (یک‌بار) ═══════════ -->
+  <div id="intro-cine" class="hidden">
+    <div id="ic-lines"></div>
+    <div id="ic-skip">لمس کن برای ادامه</div>
+  </div>
+
+  <!-- ═══════════ پایان فصل (کشتن باس پنجم) ═══════════ -->
+  <div id="scr-ending" class="screen hidden">
+    <div class="panel-box endbox">
+      <div id="end-badge">پایان فصل اول</div>
+      <h2 id="end-title">تو تکامل یافتی</h2>
+      <div id="end-lines" class="end-lines"></div>
+      <button class="btn primary big" id="btn-end-continue">ادامهٔ نبرد بی‌پایان</button>
+    </div>
+  </div>
+
   <!-- ═══════════ تأیید ═══════════ -->
   <div id="scr-confirm" class="screen hidden">
     <div class="panel-box">
@@ -243,6 +259,32 @@ setTimeout(function(){
 },20000);
 </script>
 <script src="assets/anims/manifest.js"></script>
-<script src="game.js"></script>
+<script>
+/* بارگذار هوشمند: اگر بروزرسانیِ خودکار قبلاً دریافت شده باشد همان نسخه اجرا می‌شود؛
+   در غیر این صورت نسخهٔ داخل APK. اگر نسخهٔ به‌روزشده خطا دهد، خودکار به نسخهٔ اصلی برمی‌گردد. */
+(function(){
+  var BV='1.2.1';
+  window.__BV=BV;
+  window.__GV=BV;
+  try{
+    var raw=localStorage.getItem('gv_up');
+    if(raw){
+      var o=JSON.parse(raw);
+      if(o&&o.v&&o.code&&String(o.v)!==String(BV)){
+        window.__GV=String(o.v);
+        window.__PATCHED=true;
+        (0,eval)(o.code);
+        return;
+      }
+    }
+  }catch(e){
+    try{localStorage.removeItem('gv_up');}catch(_e){}
+    if(window.console&&console.warn)console.warn('[UPD] patch failed — fallback to bundled',e&&e.message);
+  }
+  var s=document.createElement('script');
+  s.src='game.js';
+  document.head.appendChild(s);
+})();
+</script>
 </body>
 </html>
