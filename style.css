@@ -637,3 +637,41 @@ button{font-family:inherit;border:none;background:none;color:inherit;}
 }
 .boss-alert.on{opacity:1;animation:bossPulse .7s ease-in-out infinite;}
 @keyframes bossPulse{0%,100%{opacity:.55;}50%{opacity:1;}}
+
+/* ── سیستم کمپین: کارت فصل سینمایی + ردیاب نگهبانان ── */
+#banner.chapter{top:20%;}
+#banner.chapter #bn-main{
+  font-size:34px;letter-spacing:10px;color:#ffe9b0;
+  text-shadow:0 0 26px rgba(255,210,84,.95),0 0 80px rgba(255,170,40,.5);
+}
+#banner.chapter #bn-sub{
+  font-size:15.5px;color:#cfe0ff;letter-spacing:1px;max-width:min(560px,86vw);
+  line-height:1.7;text-align:center;
+}
+#banner.chapter.boss #bn-main{
+  font-size:36px;color:#ffd9dd;letter-spacing:12px;
+  text-shadow:0 0 28px rgba(255,84,112,.95),0 0 90px rgba(255,84,112,.5);
+}
+#banner.chapter.boss #bn-sub{color:#ffb0c0;}
+#banner.chapter::before{
+  content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:radial-gradient(ellipse at center,rgba(4,6,16,0) 30%,rgba(4,6,16,.72) 100%);
+  animation:chFade 2.8s ease both;
+}
+@keyframes chFade{0%{opacity:0}15%{opacity:1}82%{opacity:1}100%{opacity:0}}
+#keepers{display:flex;gap:5px;align-items:center;margin-inline-start:2px;}
+#keepers i{
+  width:9px;height:9px;border-radius:50%;
+  background:rgba(120,140,180,.18);
+  border:1px solid rgba(150,170,210,.4);
+  transition:all .5s ease;
+}
+#keepers i.lit{
+  background:#ffd254;border-color:#ffe8a0;
+  box-shadow:0 0 8px rgba(255,210,84,.9),0 0 18px rgba(255,170,40,.5);
+}
+.chip.chp{
+  color:#ffe9b0;border-color:rgba(255,210,84,.4);
+  background:rgba(255,190,60,.08);
+  text-shadow:0 0 8px rgba(255,200,80,.5);
+}

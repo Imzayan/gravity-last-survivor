@@ -18,7 +18,7 @@
 
 /* ════════════════ ۱) هسته ════════════════ */
 
-var VERSION=(typeof window.__GV==='string'&&window.__GV)?window.__GV:'1.2.1';
+var VERSION=(typeof window.__GV==='string'&&window.__GV)?window.__GV:'1.3.0';
 var SAVE_KEY='gravity_last_survivor_save';
 var SNAP_KEY='gravity_last_survivor_snapshot';
 var TAU=Math.PI*2;
@@ -407,6 +407,14 @@ var STORY={
     'آنها از شکاف آمدند. تو تنها بازمانده‌ای.',
     'هر سیگنال خاموش، یک خاطره‌ی فراموش‌شده است...',
     'هسته‌ی تاریکی در عمق میدان، منتظر توست.'
+  ],
+  goal:'هدف: هر فصل یک نگهبانِ شکاف را دارد — هر ۵ نگهبان را نابود کن تا هسته‌ی گرانش دوباره روشن شود.',
+  chapter:[
+    'شهر کاسمیک: آخرین کلان‌شهر زنده. نخستین نگهبان در میان آسمان‌خراش‌ها بیدار می‌شود...',
+    'بعد نئونی: نورها دروغ می‌گویند و خاطره‌ها را می‌بلعند. نگهبان دوم در پسِ رنگ‌ها کمین کرده.',
+    'منطقه آتشین: جایی که گرمای مذاب، خودِ گرانش را ذوب می‌کند. سومین نگهبان در چشمه‌های آتش خفته است.',
+    'سیاره یخ‌زده: بر یخِ خاموشی، فقط صدای قدم‌های توست. چهارمین نگهبان زیر یخنفس می‌کشد.',
+    'مینای گرانش: تهِ شکاف. اینجا هسته‌ی تاریکی نفس می‌کشد... و آخرین خاطره‌ات منتظر توست.'
   ],
   boss:[
     'از تاریکی، سنگین‌تر از گرانش می‌آید...',
@@ -1084,7 +1092,7 @@ function updatePlayer(dt){
         {pierce:st.pierce,homing:st.homing,explosive:st.explosive});
     }
     AudioSys.sfx('shoot',{fx:profile.fx.eq});
-    player.fireAnimT=0.16;
+    player.fireAnimT=0.26;
     addPart(player.x+Math.cos(player.aimAng)*18,player.y+Math.sin(player.aimAng)*18,
       Math.cos(player.aimAng)*60,Math.sin(player.aimAng)*60,0.12,'#cfeaff',3);
     spawnFX('muzzle',player.x+Math.cos(player.aimAng)*20,player.y+Math.sin(player.aimAng)*20,24,{rot:player.aimAng});
@@ -1659,7 +1667,8 @@ function drawEnemies(){
       drawShadow(e.x,e.y+e.r*0.95,e.r*1.02,e.elite?0.42:0.32);
       var _sd=e.seed||0;
       var _bobE=_st==='move'?Math.sin(e.t*7+_sd)*1.7:Math.sin(e.t*3+_sd)*0.7;
-      _an.draw(ctx,e.x,e.y+_bobE,e.r*4.1,{
+      var _sq=e.flash>0?(1+clamp(e.flash*2.4,0,0.16)):1;
+      _an.draw(ctx,e.x,e.y+_bobE,e.r*4.1*_sq,{
         flip:(player.x<e.x),
         tint:e.flash>0?clamp(e.flash*9,0,1):0
       });
@@ -1853,9 +1862,10 @@ function spawnBoss(idx){
   AudioSys.sfx('bossin');
   addShake(6);vib(80);
   storyMsg(STORY.boss[idx%BOSSES.length]);
+  if(!run.tutorial)showChapterCard(idx%5, true);
   spawnFX('bossin',sx,sy,def.r*5.4);
   spawnFX('ring',sx,sy,def.r*3.6);
-  showBanner(def.en,def.lore||def.fa,'boss');
+  if(run.tutorial)showBanner(def.en,def.lore||def.fa,'boss');
 }
 function damageBoss(d,crit){
   if(!boss||boss.dead||boss.inv>0||boss.entry>0)return;
@@ -2116,21 +2126,30 @@ function bossDie(){
   dropHeart(boss.x+rand(-30,30),boss.y+rand(-30,30));
   run.shardsGot+=Math.max(1,Math.round((2+idx)*st.bossMul));
   run.bossKills++;
+  updateKeepers();
   run.score+=CFG.scoreBoss*(run.scoreMul||1);
   if(run.reviveUsed===0)run.bossCleanCount++;
   if(boss.id==='titan')run.bossTitanKilled=true;
   if(boss.id==='memory')run.bossMemoryKilled=true;
   storyMsg(STORY.bosskill[idx%BOSSES.length]);
+  if(idx%5<4)setTimeout(function(){if(run&&state==='playing')storyMsg(STORY.chapter[(idx%5)+1]);},4200);
   $('bossbar').classList.add('hidden');
   /* انیمیشن مرگ باس به‌صورت جسد فریمی که در صحنه می‌ماند */
   if(ANIMS.ready&&boss.def.an)addCorpse(boss.def.an,boss.x,boss.y,boss.r*4.4,(player.x<boss.x));
   boss=null;
   flashScreen('#ffffff',0.22);
-  /* پایان فصل: کشتن باس پنجم */
+  /* پایان فصل: کشتن باس پنجم — حتی اگر کارت ارتقا باز باشد منتظر می‌ماند */
   if(idx%5===4&&!run.ended){
     run.ended=true;
-    setTimeout(showEnding,900);
+    waitEnding(900);
   }
+}
+function waitEnding(delay){
+  setTimeout(function(){
+    if(state==='playing'){showEnding();return;}
+    /* پشت کارت ارتقا/توقف — دوباره تلاش می‌کند */
+    waitEnding(500);
+  },delay||400);
 }
 /* ─── پایان فصل اول: سکانس پایانی ─── */
 function showEnding(){
@@ -2155,6 +2174,9 @@ function closeEnding(){
   UI.showScreen(null);
   UI.setHud(true);
   state='playing';
+  setEnv(0,true);
+  showBanner('نبرد بی‌پایان','فصل‌ها دوباره می‌چرخند — اما این‌بار تو نگهبانِ گرانشی','chapter');
+  updateKeepers();
   storyMsg('نبرد بی‌پایان آغاز شد — امتیاز ×۱.۵ از این لحظه');
   run.scoreMul=1.5;
 }
@@ -3106,6 +3128,8 @@ var UI={
     if(c.kills!==kv){c.kills=kv;$('st-kills').textContent='☠ '+kv;}
     var lv='Lv '+faNum(run.level);
     if(c.lvl!==lv){c.lvl=lv;$('st-lvl').textContent=lv;}
+    var chv='فصل '+faNum(Math.min(5,(run.bossKills%5===0&&run.bossKills>0&&run.ended)?5:(run.bossKills%5)+1))+'/۵';
+    if(c.ch!==chv){c.ch=chv;$('st-chapter').textContent=chv;}
     var cv2='◉ '+faGroup(run.coinsGot||0);
     if(c.coin!==cv2){c.coin=cv2;$('st-coin').textContent=cv2;}
     var dv='◈ '+faNum(run.shardsGot||0);
@@ -3839,6 +3863,7 @@ function startRun(){
   state='playing';
   AudioSys.applySettings();
   storyMsg(STORY.intro[profile.totals.runs%STORY.intro.length]);
+  setTimeout(function(){if(run&&state==='playing')showChapterCard(0);},1400);
   snapshotRun();
   /* آموزش اولیه */
   if(!profile.tutorial){
@@ -4430,7 +4455,7 @@ function setEnv(i,silent){
   buildEnvLayer();
   AudioSys.setEnv&&AudioSys.setEnv(run.envIdx);
   if(!silent){
-    showBanner(curEnv().en,curEnv().fa,'env');
+    showChapterCard(run.envIdx);
     AudioSys.sfx('level');
   }
 }
@@ -4631,6 +4656,28 @@ function updateEnvAmbient(dt){
 
 /* ─── بنر سینمایی (ورود باس / تغییر محیط) ─── */
 var bannerTO=null;
+/* ─── کارت فصل کمپین + ردیاب نگهبانان ─── */
+function showChapterCard(chIdx,bossMode){
+  var env=ENVS[((chIdx%5)+5)%5];
+  var chN=((chIdx%5)+5)%5;
+  if(bossMode){
+    var def=BOSSES[chIdx%BOSSES.length];
+    showBanner(def.fa+' — فصل '+faNum(chN+1),def.en+' • '+def.lore,'chapter boss');
+  }else{
+    var line=STORY.chapter[chN]||'';
+    showBanner('فصل '+faNum(chN+1)+' — '+env.fa,line,'chapter');
+    if(chN===0&&run&&!run.goalShown){run.goalShown=true;setTimeout(function(){storyMsg(STORY.goal);},3600);}
+  }
+  updateKeepers();
+}
+function updateKeepers(){
+  var kp=$('keepers');
+  if(!kp)return;
+  var dots=kp.getElementsByTagName('i');
+  var lit=run?Math.min(5,run.bossKills%100===run.bossKills?run.bossKills:5):0;
+  if(run&&run.bossKills>=5)lit=5;
+  for(var i=0;i<dots.length;i++)dots[i].classList.toggle('lit',i<lit);
+}
 function showBanner(main,sub,cls){
   var b=$('banner');
   if(!b)return;
@@ -4641,7 +4688,7 @@ function showBanner(main,sub,cls){
   void b.offsetWidth;
   b.classList.add('show');
   if(bannerTO)clearTimeout(bannerTO);
-  bannerTO=setTimeout(function(){b.classList.remove('show');},2400);
+  bannerTO=setTimeout(function(){b.classList.remove('show');},b.classList.contains('chapter')?3400:2400);
 }
 
 /* ─── نمایش زنده شخصیت در منوی اصلی ─── */
@@ -4825,6 +4872,22 @@ try{
     var lt=document.getElementById('loadtext');
     if(lt)lt.textContent='خطا: '+(e&&e.message?e.message:e);
   }catch(e2){}
+}
+
+/* هوک آزمایشی داخلی — فقط با پارامتر dbg=1 در آدرس فعال می‌شود */
+if(location.search.indexOf('dbg=1')>=0){
+  window.__GD={
+    get player(){return player;},
+    get run(){return run;},
+    get boss(){return boss;},
+    get enemies(){return enemies;},
+    get state(){return state;},
+    get profile(){return profile;},
+    spawn:function(t,dx,dy){return spawnEnemy(t,{pos:{x:player.x+dx,y:player.y+dy}});},
+    bossSpawn:function(i){spawnBoss(i);},
+    killBoss:function(){damageBoss(999999);},
+    hitPlayer:function(n){damagePlayer(n||12);}
+  };
 }
 
 })();

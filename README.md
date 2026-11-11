@@ -6,9 +6,9 @@
 
 ## دانلود بازی (اندروید)
 
-آخرین نسخه: **v1.2.1**
+آخرین نسخه: **v1.3.0**
 
-فایل نصبی: [`apk/gravity-last-survivor-v1.2.1.apk`](apk/gravity-last-survivor-v1.2.1.apk)
+فایل نصبی: [`apk/gravity-last-survivor-v1.3.0.apk`](apk/gravity-last-survivor-v1.3.0.apk)
 
 روی فایل بالا کلیک کن، بعد در صفحهٔ باز‌شده دکمهٔ «Download raw file» را بزن. سپس فایل را باز کن و نصب کن (اجازهٔ «نصب از منابع ناشناس» لازم است).
 
