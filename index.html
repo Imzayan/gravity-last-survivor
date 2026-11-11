@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#05060f">
+<meta name="mobile-web-app-capable" content="yes">
+<title>GRAVITY: LAST SURVIVOR</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div id="loading">
+  <div class="ld-core"></div>
+  <div class="ld-title">GRAVITY</div>
+  <div class="ld-sub" id="loadtext">در حال آماده‌سازی میدان گرانش…</div>
+  <div class="ld-bar"><div id="loadfill"></div></div>
+</div>
+
+<div id="ui">
+
+  <!-- ═══════════ HUD داخل بازی ═══════════ -->
+  <div id="hud" class="hidden">
+    <div id="xpbar"><div id="xpfill"></div></div>
+    <div id="hud-top">
+      <div id="hpwrap"><div id="hpfill"></div><span id="hptext">۱۰۰</span></div>
+      <div id="hud-chips">
+        <span class="chip" id="st-score">۰</span>
+        <span class="chip" id="st-time">۰۰:۰۰</span>
+        <span class="chip" id="st-kills">☠ ۰</span>
+        <span class="chip" id="st-lvl">Lv ۱</span>
+        <span class="chip gold" id="st-coin">◉ ۰</span>
+        <span class="chip cyan" id="st-shard">◈ ۰</span>
+        <span class="chip red" id="st-enemy">⬢ ۰</span>
+      </div>
+      <button id="pausebtn" class="iconbtn">⏸</button>
+    </div>
+    <div id="bossbar" class="hidden">
+      <div id="bossname">BOSS</div>
+      <div class="bbar"><div id="bossfill"></div></div>
+    </div>
+    <div id="eventwarn" class="hidden"><span id="ew-icon"></span><span id="ew-text"></span></div>
+    <div id="skills"></div>
+    <button id="dashbtn"><span>⟫</span><i id="dashcd"></i></button>
+    <div id="story" class="hidden"></div>
+    <div id="banner"><div id="bn-main"></div><div id="bn-sub"></div></div>
+  </div>
+
+  <div id="toast" class="hidden"></div>
+
+  <!-- ═══════════ منوی اصلی ═══════════ -->
+  <div id="scr-menu" class="screen">
+    <div class="menu-wrap">
+      <canvas id="menu-skin-cv" width="150" height="150"></canvas>
+      <h1 id="logo">GRAVITY</h1>
+      <div id="logo-sub">LAST SURVIVOR</div>
+      <div id="tagline">«هر مرگ، آغاز تکامل است.»</div>
+      <div id="menu-res">
+        <span class="res-chip gold">◉ <b id="m-coins">۰</b></span>
+        <span class="res-chip cyan">◈ <b id="m-shards">۰</b></span>
+        <span class="res-chip">رکورد <b id="m-best">۰</b></span>
+      </div>
+      <div class="menu-btns">
+        <button class="btn big primary" id="btn-start">شروع بازی</button>
+        <div class="menu-grid">
+          <button class="btn" id="btn-shop">🛒 فروشگاه</button>
+          <button class="btn" id="btn-tree">◈ درخت حافظه</button>
+          <button class="btn" id="btn-missions">☑ مأموریت‌ها</button>
+          <button class="btn" id="btn-ach">★ دستاوردها</button>
+        </div>
+        <button class="btn ghost" id="btn-settings">⚙ تنظیمات</button>
+      </div>
+      <div id="menu-ver">v1.2.1 — Offline</div>
+    </div>
+  </div>
+
+  <!-- ═══════════ فروشگاه ═══════════ -->
+  <div id="scr-shop" class="screen hidden">
+    <div class="scr-head">
+      <button class="btn back" data-back>❯</button>
+      <h2>فروشگاه</h2>
+      <span class="res-chip gold">◉ <b id="shop-coins">۰</b></span>
+    </div>
+    <div id="shop-tabs">
+      <button class="tab active" data-tab="skins">اسکین‌ها</button>
+      <button class="tab" data-tab="fx">افکت شلیک</button>
+      <button class="tab" data-tab="item">مصرفی</button>
+      <button class="tab" data-tab="spec">ویژه</button>
+    </div>
+    <div id="shop-grid" class="scroll"></div>
+  </div>
+
+  <!-- ═══════════ درخت حافظه ═══════════ -->
+  <div id="scr-tree" class="screen hidden">
+    <div class="scr-head">
+      <button class="btn back" data-back>❯</button>
+      <h2>درخت حافظه</h2>
+      <span class="res-chip cyan">◈ <b id="tree-shards">۰</b></span>
+    </div>
+    <div id="tree-cols" class="scroll"></div>
+    <div id="tree-panel" class="hidden">
+      <div id="tp-name"></div>
+      <div id="tp-desc" class="mini"></div>
+      <div id="tp-lv" class="mini"></div>
+      <button class="btn primary" id="tp-buy">ارتقا</button>
+    </div>
+  </div>
+
+  <!-- ═══════════ مأموریت‌ها ═══════════ -->
+  <div id="scr-missions" class="screen hidden">
+    <div class="scr-head">
+      <button class="btn back" data-back>❯</button>
+      <h2>مأموریت‌ها</h2>
+      <span id="mission-day" class="chip"></span>
+    </div>
+    <div id="mission-list" class="scroll"></div>
+  </div>
+
+  <!-- ═══════════ دستاوردها ═══════════ -->
+  <div id="scr-ach" class="screen hidden">
+    <div class="scr-head">
+      <button class="btn back" data-back>❯</button>
+      <h2>دستاوردها</h2>
+      <span class="chip" id="ach-progress"></span>
+    </div>
+    <div id="ach-list" class="scroll"></div>
+  </div>
+
+  <!-- ═══════════ تنظیمات ═══════════ -->
+  <div id="scr-settings" class="screen hidden">
+    <div class="scr-head">
+      <button class="btn back" data-back>❯</button>
+      <h2>تنظیمات</h2>
+      <span></span>
+    </div>
+    <div class="set-list scroll">
+      <div class="set-row"><span>موسیقی</span><button class="toggle on" id="tg-music"></button></div>
+      <div class="set-row"><span>صداها</span><button class="toggle on" id="tg-sfx"></button></div>
+      <div class="set-row"><span>لرزش</span><button class="toggle on" id="tg-vib"></button></div>
+      <div class="set-row">
+        <span>کیفیت افکت‌ها</span>
+        <div class="seg" id="qual-seg">
+          <button class="segb" data-q="0">کم</button>
+          <button class="segb on" data-q="1">متوسط</button>
+          <button class="segb" data-q="2">زیاد</button>
+        </div>
+      </div>
+      <div class="set-row"><span>زبان</span><span class="chip">فارسی ✓</span></div>
+      <button class="btn danger" id="btn-reset">بازنشانی اطلاعات</button>
+      <div id="set-stats" class="mini"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════ توقف ═══════════ -->
+  <div id="scr-pause" class="screen hidden">
+    <div class="panel-box">
+      <h2>توقف</h2>
+      <div id="pz-info" class="mini"></div>
+      <button class="btn primary big" id="btn-resume">ادامه</button>
+      <button class="btn" id="btn-quit">پایان دور و دریافت پاداش</button>
+    </div>
+  </div>
+
+  <!-- ═══════════ انتخاب مهارت ═══════════ -->
+  <div id="scr-level" class="screen hidden">
+    <h2 id="lv-title">ارتقای سطح!</h2>
+    <div id="cards"></div>
+    <div class="mini" id="lv-hint">یکی از قدرت‌های خاطره را انتخاب کن</div>
+  </div>
+
+  <!-- ═══════════ پایان دور ═══════════ -->
+  <div id="scr-over" class="screen hidden">
+    <div class="panel-box">
+      <h2 id="go-title">پایان دور</h2>
+      <div id="go-new" class="badge hidden">★ رکورد جدید!</div>
+      <div id="go-grid"></div>
+      <div id="go-rewards"></div>
+      <div class="col">
+        <button class="btn primary big" id="btn-again">دوباره بازی کن</button>
+        <button class="btn adbtn" id="btn-double">▶ دو برابر کردن پاداش</button>
+        <button class="btn adbtn" id="btn-random-item">▶ دریافت آیتم تصادفی</button>
+        <button class="btn hidden" id="btn-revive">احیا</button>
+        <button class="btn ghost" id="btn-tomenu">بازگشت به منو</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ تبلیغ جایزه‌دار (آزمایشی) ═══════════ -->
+  <div id="scr-ad" class="screen hidden">
+    <div class="panel-box adbox">
+      <div id="ad-badge">تبلیغ آزمایشی</div>
+      <div id="ad-mock"><div class="ad-orb"></div><div id="ad-text">GRAVITY<br>LAST SURVIVOR</div></div>
+      <div id="ad-timer">۵</div>
+      <button class="btn primary" id="btn-ad-claim" disabled>دریافت پاداش</button>
+      <button class="btn ghost" id="btn-ad-close">لغو</button>
+      <div id="ad-note" class="mini">پاداش فقط پس از پایان کامل تبلیغ داده می‌شود.</div>
+    </div>
+  </div>
+
+  <!-- ═══════════ تأیید ═══════════ -->
+  <div id="scr-confirm" class="screen hidden">
+    <div class="panel-box">
+      <h3 id="cf-title"></h3>
+      <p id="cf-text" class="mini"></p>
+      <div class="row">
+        <button class="btn danger" id="cf-yes">بله</button>
+        <button class="btn" id="cf-no">خیر</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ آموزش ═══════════ -->
+  <div id="scr-tut" class="screen hidden">
+    <div id="tut-box">
+      <span id="tut-step" class="chip">۱/۴</span>
+      <div id="tut-text"></div>
+      <button class="btn ghost" id="btn-tut-skip">رد کردن آموزش</button>
+    </div>
+  </div>
+
+</div>
+<script>
+/* گزارش خطای راه‌اندازی + محافظ قطعی لودینگ — برای عیب‌یابی آفلاین */
+window.__bootErr=null;
+window.addEventListener('error',function(e){
+  window.__bootErr=(e.message||'error')+' @'+(e.filename||'').split('/').pop()+':'+e.lineno;
+  if(window.console&&console.error)console.error('[BOOT]',window.__bootErr);
+  var lt=document.getElementById('loadtext');
+  if(lt)lt.textContent='خطا: '+window.__bootErr;
+});
+/* محافظ نهایی: حتی اگر هرچیز دیگری خراب شد، لودینگ بعد از ۲۰ ثانیه حتماً برداشته می‌شود */
+setTimeout(function(){
+  var lo=document.getElementById('loading');
+  if(lo&&!lo.classList.contains('gone')){
+    lo.classList.add('done');
+    setTimeout(function(){lo.classList.add('gone');},380);
+    if(window.__bootErr){
+      var lt=document.getElementById('loadtext');
+      if(lt)lt.textContent='خطا: '+window.__bootErr;
+    }
+  }
+},20000);
+</script>
+<script src="assets/anims/manifest.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
