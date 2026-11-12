@@ -18,7 +18,7 @@
 
 /* ════════════════ ۱) هسته ════════════════ */
 
-var VERSION=(typeof window.__GV==='string'&&window.__GV)?window.__GV:'1.4.0';
+var VERSION=(typeof window.__GV==='string'&&window.__GV)?window.__GV:'1.5.0';
 var SAVE_KEY='gravity_last_survivor_save';
 var SNAP_KEY='gravity_last_survivor_snapshot';
 var TAU=Math.PI*2;
@@ -606,14 +606,29 @@ function drawShadow(x,y,rr,a){
   ctx.beginPath();ctx.ellipse(x,y,rr,rr*0.42,0,0,TAU);ctx.fill();
 }
 
+/* ─── کیفیت تطبیقی: افت واقعی فرِیم → کاهش بی‌صدای بار گرافیکی ───
+   AUTOQ لایه‌ای روی انتخاب کاربر است و هرگز گیم‌پلی را تغییر نمی‌دهد. */
+var AUTOQ=0;
+function effQ(){var q=(profile?profile.set.quality:1)-AUTOQ;return q<0?0:(q>2?2:q);}
+var PERF={acc:0,n:0,cool:0};
+function perfGovernor(dt){
+  if(state!=='playing')return;
+  PERF.acc+=dt;PERF.n++;PERF.cool-=dt;
+  if(PERF.n<40)return;
+  var avg=PERF.acc/PERF.n;PERF.acc=0;PERF.n=0;
+  if(PERF.cool>0)return;
+  var q=profile?profile.set.quality:1;
+  if(avg>0.027&&AUTOQ<2&&(q-AUTOQ)>0){AUTOQ++;PERF.cool=5;}
+  else if(avg<0.0145&&AUTOQ>0){AUTOQ--;PERF.cool=9;}
+}
 /* ─── سیستم ذرات (Object Pool سبک با سقف کیفیت) ─── */
-function partCap(){return CFG.partCap[profile?profile.set.quality:1];}
+function partCap(){return CFG.partCap[effQ()];}
 function addPart(x,y,vx,vy,life,col,size){
   if(parts.length>=partCap())return;
   parts.push({x:x,y:y,vx:vx,vy:vy,life:life,max:life,col:col,size:size});
 }
 function burst(x,y,col,n,spd,life){
-  n=profile&&profile.set.quality===0?Math.ceil(n*0.5):n;
+  n=effQ()===0?Math.ceil(n*0.5):n;
   for(var i=0;i<n;i++){
     var a=rand(0,TAU),s=rand(spd*0.3,spd);
     addPart(x,y,Math.cos(a)*s,Math.sin(a)*s,rand(life*0.5,life),col,rand(1.5,3.5));
@@ -1016,7 +1031,9 @@ function updatePlayer(dt){
   if(!player.alive)return;
   var st=player.st;
   player.animT+=dt;
-  if(player.anim)player.anim.update(dt);
+  /* هم‌گامی سرعت دویدن با سرعت پخش انیمیشن */
+  var _spdP=Math.sqrt(player.vx*player.vx+player.vy*player.vy);
+  if(player.anim)player.anim.update(dt*(1+Math.min(0.65,_spdP/520)));
   /* حرکت */
   var mx=input.mx,my=input.my,kb=input.keys;
   if(kb['a']||kb['A']||kb['ArrowLeft'])mx=-1;
@@ -1048,6 +1065,14 @@ function updatePlayer(dt){
     player.vy=lerp(player.vy,tvy,k);
   }
   player.x+=player.vx*dt;player.y+=player.vy*dt;
+  /* گرد و غبار قدم — متصل به حرکت واقعی بازیکن */
+  if(player.dashT<=0&&_spdP>52){
+    player.stepT=(player.stepT||0)+dt;
+    if(player.stepT>=(effQ()===0?0.2:0.13)){
+      player.stepT=0;
+      addPart(player.x+rand(-5,5),player.y+15,rand(-14,14),rand(-26,-6),rand(0.25,0.5),'#8fb0e8',rand(1.5,3));
+    }
+  }
   player.dashCdT=Math.max(0,player.dashCdT-dt);
   if(player.dashT<=0){
     for(i=0;i<enemies.length;i++)enemies[i].dashHit=false;
@@ -1092,7 +1117,7 @@ function updatePlayer(dt){
         {pierce:st.pierce,homing:st.homing,explosive:st.explosive});
     }
     AudioSys.sfx('shoot',{fx:profile.fx.eq});
-    player.fireAnimT=0.26;
+    player.fireAnimT=0.2;
     addPart(player.x+Math.cos(player.aimAng)*18,player.y+Math.sin(player.aimAng)*18,
       Math.cos(player.aimAng)*60,Math.sin(player.aimAng)*60,0.12,'#cfeaff',3);
     spawnFX('muzzle',player.x+Math.cos(player.aimAng)*20,player.y+Math.sin(player.aimAng)*20,24,{rot:player.aimAng});
@@ -1245,9 +1270,10 @@ function drawPlayer(){
   drawGlow(player.x,player.y,skin.glow,52,0.55);
   if(player.anim&&ANIMS.ready){
     /* انیمیشن فریمی واقعی متصل به وضعیت واقعی بازیکن + تکانه‌ی دویدن و خم‌شدن جهت‌دار */
+    /* اولویت واقعی وضعیت‌ها: مرگ > ضربه > حمله > دویدن > ایست */
     var _st='idle';
-    if(player.fireAnimT>0)_st='attack';
     if(_mvP)_st='run';
+    if(player.fireAnimT>0)_st='attack';
     if(player.hurtT>0.08)_st='hit';
     player.anim.play(_st);
     var _lean=clamp(player.vx*0.0011,-0.1,0.1);
@@ -3088,6 +3114,8 @@ var UI={
     this._toastT=setTimeout(function(){t.classList.add('hidden');},dur||2100);
   },
   storyMsg:function(txt){
+    /* روایت فقط داخل بازی — هرگز روی منو/فروشگاه نمی‌افتد */
+    if(state!=='playing'&&state!=='levelup'&&state!=='dead'&&state!=='ending')return;
     var s=$('story');
     s.textContent=txt;
     s.classList.remove('hidden');
@@ -4077,6 +4105,7 @@ function loop(ts){
   var dt=Math.min(0.05,(ts-lastTs)/1000||0.016);
   lastTs=ts;
   frameT=ts;
+  perfGovernor(dt);
   if(slowMoT>0){slowMoT-=dt;dt*=slowMoF;}
   if(state==='playing'){
     update(dt);
@@ -4302,6 +4331,7 @@ Anim.prototype.draw=function(g,x,y,size,o){
   if(!im||!im.complete||!im.naturalWidth)return;
   o=o||{};
   var sp=this.cur,fw=sp.fw,fh=sp.fh;
+  if(sp.ds)size=size*sp.ds; /* نرمال‌سازی اندازه‌ی هنر داخل فریم */
   var alpha=o.alpha!=null?o.alpha:1;
   if(alpha<=0.01)return;
   g.save();
@@ -4338,6 +4368,7 @@ function drawAnimFrame(g,entId,st,t,x,y,size,alpha){
   if(!sp)return false;
   var im=ANIMS.imgs[sp.key];
   if(!im||!im.complete||!im.naturalWidth)return false;
+  if(sp.ds)size=size*sp.ds;
   var f=Math.floor(t*sp.fps)%sp.frames;
   g.save();
   if(alpha!=null)g.globalAlpha=alpha;
@@ -4367,7 +4398,7 @@ var FXQ={pool:[],n:0,cap:64};
 function spawnFX(type,x,y,size,opts){
   var def=FX_DEFS[type];
   if(!def)return null;
-  var q=profile&&profile.set?profile.set.quality:2;
+  var q=effQ();
   var cap=Math.round(FXQ.cap*(q===0?0.4:q===1?0.7:1));
   if(FXQ.n>=cap)return null;
   var f=null;
@@ -4414,7 +4445,7 @@ function drawFXAll(){
 /* باقی‌مانده انیمیشن مرگ موجودیت‌ها (فریم واقعی، یک‌بارپخش) */
 var corpses=[];
 function addCorpse(entId,x,y,size,flip){
-  var q=profile&&profile.set?profile.set.quality:2;
+  var q=effQ();
   if(corpses.length>=(q===0?8:q===1?14:22))corpses.shift();
   var a=new Anim(entId);
   a.play('death',true);
@@ -4638,7 +4669,7 @@ function updateEnvAmbient(dt){
   var env=curEnv();
   envAmbT-=dt;
   if(envAmbT<=0){
-    envAmbT=profile&&profile.set.quality===0?0.5:0.22;
+    envAmbT=effQ()===0?0.5:0.22;
     var x=cam.x+rand(-W*0.55,W*0.55),y=cam.y+rand(-H*0.6,H*0.6);
     if(env.amb==='ember'){
       addPart(x,y,rand(-14,14),-rand(26,66),rand(1.6,3),'#ff7a3d',rand(1.5,3));
