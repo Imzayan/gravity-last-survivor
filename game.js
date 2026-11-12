@@ -18,7 +18,7 @@
 
 /* ════════════════ ۱) هسته ════════════════ */
 
-var VERSION=(typeof window.__GV==='string'&&window.__GV)?window.__GV:'1.3.0';
+var VERSION=(typeof window.__GV==='string'&&window.__GV)?window.__GV:'1.4.0';
 var SAVE_KEY='gravity_last_survivor_save';
 var SNAP_KEY='gravity_last_survivor_snapshot';
 var TAU=Math.PI*2;
@@ -1344,14 +1344,14 @@ function updateTrail(dt){
 /* ════════════════ ۳) دشمنان — ۱۰ نوع با هوش مصنوعی متمایز ════════════════ */
 
 var ETYPES={
-  chaser:{fa:'تعقیب‌کننده',hp:24,spd:62,dmg:10,r:13,xp:2,col:'#ff5470',unlock:0,w:10,kbr:1,an:'enemy_01'},
-  fast:{fa:'سرعتی',hp:12,spd:132,dmg:7,r:10,xp:2,col:'#aaff54',unlock:0,w:6,kbr:1,an:'enemy_02'},
-  zig:{fa:'زیگزاگی',hp:20,spd:72,dmg:8,r:12,xp:2,col:'#ffb454',unlock:40,w:5,kbr:1,an:'enemy_03'},
+  chaser:{fa:'تعقیب‌کننده',hp:24,spd:62,dmg:10,r:13,xp:2,col:'#7fd0ff',unlock:0,w:10,kbr:1,an:'enemy_01'},
+  fast:{fa:'سرعتی',hp:12,spd:132,dmg:7,r:10,xp:2,col:'#c084fc',unlock:0,w:6,kbr:1,an:'enemy_02'},
+  zig:{fa:'زیگزاگی',hp:20,spd:72,dmg:8,r:12,xp:2,col:'#ff5470',unlock:40,w:5,kbr:1,an:'enemy_03'},
   bomb:{fa:'انفجاری',hp:22,spd:88,dmg:24,r:14,xp:3,col:'#ff7a3d',unlock:80,w:4,kbr:1,an:'enemy_04'},
-  tank:{fa:'تانک',hp:95,spd:33,dmg:18,r:20,xp:6,col:'#8f9bb3',unlock:90,w:4,kbr:0.15,an:'enemy_05'},
-  split:{fa:'تقسیم‌شونده',hp:30,spd:58,dmg:9,r:15,xp:3,col:'#ff54d2',unlock:140,w:4,kbr:1,an:'enemy_06'},
-  shield:{fa:'سپردار',hp:42,spd:46,dmg:12,r:14,xp:3,col:'#54d2ff',unlock:150,w:4,kbr:0.4,an:'enemy_07'},
-  sniper:{fa:'تک‌تیرانداز',hp:18,spd:55,dmg:12,r:12,xp:4,col:'#c084fc',unlock:200,w:3,kbr:1,an:'enemy_08'},
+  tank:{fa:'تانک',hp:95,spd:33,dmg:18,r:20,xp:6,col:'#9d7bff',unlock:90,w:4,kbr:0.15,an:'enemy_05'},
+  split:{fa:'تقسیم‌شونده',hp:30,spd:58,dmg:9,r:15,xp:3,col:'#54ff9f',unlock:140,w:4,kbr:1,an:'enemy_06'},
+  shield:{fa:'سپردار',hp:42,spd:46,dmg:12,r:14,xp:3,col:'#ffd700',unlock:150,w:4,kbr:0.4,an:'enemy_07'},
+  sniper:{fa:'تک‌تیرانداز',hp:18,spd:55,dmg:12,r:12,xp:4,col:'#ffd254',unlock:200,w:3,kbr:1,an:'enemy_08'},
   heal:{fa:'احیاگر',hp:26,spd:50,dmg:6,r:12,xp:5,col:'#54ff9f',unlock:260,w:3,kbr:1,an:'enemy_09'},
   hunter:{fa:'شکارچی',hp:30,spd:78,dmg:11,r:13,xp:4,col:'#ff3860',unlock:320,w:3,kbr:1,an:'enemy_10'}
 };
@@ -1824,8 +1824,8 @@ var BOSSES=[
   {id:'titan',en:'VOID TITAN',fa:'تایتان تهی',lore:'زندانیِ گرانش، نگهبانِ تهی‌بودن.',hp:520,r:46,spd:44,dmg:22,col:'#8f6bff',an:'boss_01'},
   {id:'nebula',en:'NEBULA',fa:'سحابی',lore:'سحابی‌ای که خاطره‌ها را می‌بلعد.',hp:430,r:40,spd:62,dmg:18,col:'#ff6bd6',an:'boss_02'},
   {id:'shatter',en:'SHATTER',fa:'شکننده',lore:'هر بازتابش، هزار تکه‌ی سرد.',hp:480,r:44,spd:66,dmg:20,col:'#54e0ff',an:'boss_03'},
-  {id:'reaper',en:'GRAVITY REAPER',fa:'داس جاذبه',lore:'داسی که نور را هم درو می‌کند.',hp:520,r:42,spd:52,dmg:20,col:'#b0ff54',an:'boss_04'},
-  {id:'memory',en:'THE LAST MEMORY',fa:'آخرین خاطره',lore:'آخرین چیزی که از تو باقی مانده است.',hp:640,r:40,spd:70,dmg:24,col:'#ffd254',an:'boss_05'}
+  {id:'reaper',en:'GRAVITY REAPER',fa:'داس جاذبه',lore:'داسی که نور را هم درو می‌کند.',hp:520,r:42,spd:52,dmg:20,col:'#a86bff',an:'boss_04'},
+  {id:'memory',en:'THE LAST MEMORY',fa:'آخرین خاطره',lore:'آخرین چیزی که از تو باقی مانده است.',hp:640,r:40,spd:70,dmg:24,col:'#5ec8ff',an:'boss_05'}
 ];
 /* جملات پایانی دور — روح داستانی بازی */
 var EPITAPHS=[
